@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Reaction Time Checker</title>
+    <title>3 Player Reaction Time Test</title>
     <style>
         html, body {
             margin: 0;
@@ -21,50 +21,100 @@
             font-size: 2rem;
             user-select: none;
             cursor: pointer;
-        }
-
-        .text {
             text-align: center;
+            white-space: pre-line;
         }
     </style>
 </head>
 <body>
 
-<div class="text" id="text">
-    Click anywhere to start
+<div id="text">
+    Player 1\nClick anywhere to start
 </div>
 
 <script>
-    let startTime = null;
+    const TOTAL_PLAYERS = 3;
+    const ATTEMPTS_PER_PLAYER = 5;
+
+    let currentPlayer = 0;
+    let currentAttempt = 0;
     let waiting = false;
     let ready = false;
+    let startTime = null;
+
+    const results = Array.from({ length: TOTAL_PLAYERS }, () => []);
+
+    const text = document.getElementById("text");
+
+    function showStatus(message) {
+        text.textContent = message;
+    }
+
+    function nextPlayer() {
+        currentPlayer++;
+        currentAttempt = 0;
+
+        if (currentPlayer < TOTAL_PLAYERS) {
+            showStatus(`Player ${currentPlayer + 1}\nClick anywhere to start`);
+        } else {
+            showFinalResults();
+        }
+    }
+
+    function showFinalResults() {
+        let output = "FINAL RESULTS\n\n";
+
+        results.forEach((playerResults, index) => {
+            const avg = Math.round(
+                playerResults.reduce((a, b) => a + b, 0) / playerResults.length
+            );
+            output += `Player ${index + 1}: ${playerResults.join(", ")} ms\nAverage: ${avg} ms\n\n`;
+        });
+
+        document.body.style.backgroundColor = "black";
+        showStatus(output);
+    }
 
     document.body.addEventListener("click", () => {
         if (!waiting && !ready) {
-            // Start test
+            // Start attempt
             document.body.style.backgroundColor = "red";
-            document.getElementById("text").textContent = "Wait for green...";
-            waiting = true;
+            showStatus(
+                `Player ${currentPlayer + 1}\nAttempt ${currentAttempt + 1}/${ATTEMPTS_PER_PLAYER}\nWait for green...`
+            );
 
-            const delay = Math.random() * 3000 + 1000; // 1–4 sec
+            waiting = true;
+            const delay = Math.random() * 3000 + 1000;
 
             setTimeout(() => {
                 document.body.style.backgroundColor = "green";
-                document.getElementById("text").textContent = "CLICK!";
+                showStatus("CLICK!");
                 startTime = performance.now();
                 ready = true;
                 waiting = false;
             }, delay);
 
         } else if (ready) {
-            // Measure reaction
+            // Record reaction
             const reactionTime = Math.round(performance.now() - startTime);
-            document.body.style.backgroundColor = "red";
-            document.getElementById("text").textContent =
-                `Reaction Time: ${reactionTime} ms\nClick to try again`;
+            results[currentPlayer].push(reactionTime);
 
             ready = false;
             startTime = null;
+            currentAttempt++;
+
+            document.body.style.backgroundColor = "red";
+
+            if (currentAttempt < ATTEMPTS_PER_PLAYER) {
+                showStatus(
+                    `Player ${currentPlayer + 1}\nReaction: ${reactionTime} ms\nClick for next attempt`
+                );
+            } else {
+                showStatus(
+                    `Player ${currentPlayer + 1} done!\nClick for next player`
+                );
+                setTimeout(nextPlayer, 500);
+            }
         }
     });
 </script>
