@@ -4,84 +4,69 @@
     <meta charset="UTF-8">
     <title>Reaction Time Checker</title>
     <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #111;
-            color: #fff;
+            background-color: red;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
+            font-family: Arial, sans-serif;
+            color: white;
+            font-size: 2rem;
+            user-select: none;
+            cursor: pointer;
         }
 
-        .container {
+        .text {
             text-align: center;
-        }
-
-        #box {
-            width: 300px;
-            height: 150px;
-            background: red;
-            display: none;
-            margin: 20px auto;
-            cursor: pointer;
-        }
-
-        button {
-            padding: 12px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        .result {
-            margin-top: 15px;
-            font-size: 18px;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Reaction Time Test</h1>
-    <p>Click the box as soon as it turns green.</p>
-
-    <button id="startBtn">Start Test</button>
-
-    <div id="box"></div>
-
-    <div class="result" id="result"></div>
+<div class="text" id="text">
+    Click anywhere to start
 </div>
 
 <script>
-    let startTime;
-    let timeoutId;
+    let startTime = null;
+    let waiting = false;
+    let ready = false;
 
-    const box = document.getElementById("box");
-    const startBtn = document.getElementById("startBtn");
-    const result = document.getElementById("result");
+    document.body.addEventListener("click", () => {
+        if (!waiting && !ready) {
+            // Start test
+            document.body.style.backgroundColor = "red";
+            document.getElementById("text").textContent = "Wait for green...";
+            waiting = true;
 
-    startBtn.onclick = () => {
-        result.textContent = "";
-        box.style.display = "none";
-        box.style.background = "red";
+            const delay = Math.random() * 3000 + 1000; // 1–4 sec
 
-        const randomDelay = Math.random() * 3000 + 1000; // 1–4 seconds
+            setTimeout(() => {
+                document.body.style.backgroundColor = "green";
+                document.getElementById("text").textContent = "CLICK!";
+                startTime = performance.now();
+                ready = true;
+                waiting = false;
+            }, delay);
 
-        timeoutId = setTimeout(() => {
-            box.style.display = "block";
-            box.style.background = "green";
-            startTime = Date.now();
-        }, randomDelay);
-    };
+        } else if (ready) {
+            // Measure reaction
+            const reactionTime = Math.round(performance.now() - startTime);
+            document.body.style.backgroundColor = "red";
+            document.getElementById("text").textContent =
+                `Reaction Time: ${reactionTime} ms\nClick to try again`;
 
-    box.onclick = () => {
-        if (box.style.background === "green") {
-            const reactionTime = Date.now() - startTime;
-            result.textContent = `Your reaction time: ${reactionTime} ms`;
-            box.style.display = "none";
+            ready = false;
+            startTime = null;
         }
-    };
+    });
 </script>
 
 </body>
