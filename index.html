@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>3 Player Reaction Time Test</title>
+    <title>Reaction Time – Max Score Wins</title>
     <style>
         html, body {
             margin: 0;
@@ -28,13 +28,12 @@
 </head>
 <body>
 
-<div id="text">
-    Player 1\nClick anywhere to start
-</div>
+<div id="text">Player 1\nClick anywhere to start</div>
 
 <script>
     const TOTAL_PLAYERS = 3;
     const ATTEMPTS_PER_PLAYER = 5;
+    const BASE_SCORE = 1000;
 
     let currentPlayer = 0;
     let currentAttempt = 0;
@@ -43,11 +42,12 @@
     let startTime = null;
 
     const results = Array.from({ length: TOTAL_PLAYERS }, () => []);
+    const scores = Array(TOTAL_PLAYERS).fill(0);
 
     const text = document.getElementById("text");
 
-    function showStatus(message) {
-        text.textContent = message;
+    function show(msg) {
+        text.textContent = msg;
     }
 
     function nextPlayer() {
@@ -55,7 +55,7 @@
         currentAttempt = 0;
 
         if (currentPlayer < TOTAL_PLAYERS) {
-            showStatus(`Player ${currentPlayer + 1}\nClick anywhere to start`);
+            show(`Player ${currentPlayer + 1}\nClick anywhere to start`);
         } else {
             showFinalResults();
         }
@@ -64,23 +64,33 @@
     function showFinalResults() {
         let output = "FINAL RESULTS\n\n";
 
-        results.forEach((playerResults, index) => {
-            const avg = Math.round(
-                playerResults.reduce((a, b) => a + b, 0) / playerResults.length
-            );
-            output += `Player ${index + 1}: ${playerResults.join(", ")} ms\nAverage: ${avg} ms\n\n`;
-        });
+        let winner = 0;
+        let maxScore = scores[0];
+
+        for (let i = 0; i < TOTAL_PLAYERS; i++) {
+            output += `Player ${i + 1}\n`;
+            output += `Times: ${results[i].join(", ")} ms\n`;
+            output += `Score: ${scores[i]}\n\n`;
+
+            if (scores[i] > maxScore) {
+                maxScore = scores[i];
+                winner = i;
+            }
+        }
+
+        output += `🏆 WINNER: Player ${winner + 1}\n(Max Score: ${maxScore})`;
 
         document.body.style.backgroundColor = "black";
-        showStatus(output);
+        show(output);
     }
 
     document.body.addEventListener("click", () => {
         if (!waiting && !ready) {
-            // Start attempt
             document.body.style.backgroundColor = "red";
-            showStatus(
-                `Player ${currentPlayer + 1}\nAttempt ${currentAttempt + 1}/${ATTEMPTS_PER_PLAYER}\nWait for green...`
+            show(
+                `Player ${currentPlayer + 1}\n` +
+                `Attempt ${currentAttempt + 1}/${ATTEMPTS_PER_PLAYER}\n` +
+                `Wait for green...`
             );
 
             waiting = true;
@@ -88,16 +98,18 @@
 
             setTimeout(() => {
                 document.body.style.backgroundColor = "green";
-                showStatus("CLICK!");
+                show("CLICK!");
                 startTime = performance.now();
                 ready = true;
                 waiting = false;
             }, delay);
 
         } else if (ready) {
-            // Record reaction
             const reactionTime = Math.round(performance.now() - startTime);
+            const score = Math.max(0, BASE_SCORE - reactionTime);
+
             results[currentPlayer].push(reactionTime);
+            scores[currentPlayer] += score;
 
             ready = false;
             startTime = null;
@@ -106,12 +118,17 @@
             document.body.style.backgroundColor = "red";
 
             if (currentAttempt < ATTEMPTS_PER_PLAYER) {
-                showStatus(
-                    `Player ${currentPlayer + 1}\nReaction: ${reactionTime} ms\nClick for next attempt`
+                show(
+                    `Player ${currentPlayer + 1}\n` +
+                    `Reaction: ${reactionTime} ms\n` +
+                    `Score: +${score}\n` +
+                    `Click for next attempt`
                 );
             } else {
-                showStatus(
-                    `Player ${currentPlayer + 1} done!\nClick for next player`
+                show(
+                    `Player ${currentPlayer + 1} finished!\n` +
+                    `Total Score: ${scores[currentPlayer]}\n` +
+                    `Click to continue`
                 );
                 setTimeout(nextPlayer, 500);
             }
